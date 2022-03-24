@@ -12,7 +12,7 @@ Title: gym/gym/envs/classic_control/pendulum.py
 Author: [openai](https://github.com/openai)
 Last modified: 2021/10/31
 """
- import pygame
+import pygame
 from math import pi, sin, cos
 import numpy as np
 
@@ -23,7 +23,7 @@ from gym.utils import seeding
 
 class Pendulum:
     def __init__(self, rend, seed):
-        self.np_random = np.random.seed(seed)
+        #self.np_random = np.random.seed(seed)
         #for i in range(10):
         #    print(np.random.uniform(low=-3.5, high=3.5)*pi/180)
 
@@ -48,10 +48,9 @@ class Pendulum:
         self.torque = 0
         self.voltage = 0
 
-        high =
-
-        self.action_space = spaces.Discrete(2)
-        self.observation_space = spaces.Box(-high, high, dtype=np.float32)
+        high = np.array([pi, 0.5, self.wheel_max_speed], dtype=np.float32)
+        self.action_space = spaces.Box(low=-self.max_torque, high=self.max_torque, shape=(1,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-high, high=high, dtype=np.float32)
 
         #print(self.mass_wheel)
         #print(self.momentum_rod)
@@ -73,7 +72,13 @@ class Pendulum:
             #print("font")
 
 
-    def reset(self, saved):
+    def reset(self, saved, seed):
+        self.np_random = np.random.seed(seed)
+        high = np.array([pi, 0.5, self.wheel_max_speed])
+        self.state = self.np_random.uniform(low=-high, high=high)
+        self.last_u = None
+        if not return_info:
+            return np.array([self.theta_rod, self.theta_rod_dot, self.theta_wheel_dot], dtype=np.float32)
 
         roll_range = 3 #in degree
         self.ang = roll_range
