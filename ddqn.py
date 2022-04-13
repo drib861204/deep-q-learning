@@ -5,12 +5,16 @@ import numpy as np
 from collections import deque
 from keras.models import Sequential
 from keras.layers import Dense
-from keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam
 from keras import backend as K
 
 import tensorflow as tf
+from Pendulum_v2 import *  # added by Ben
 
 EPISODES = 5000
+RENDER = 0
+SEED = 0
+SAVED_MODEL = None
 
 class DQNAgent:
     def __init__(self, state_size, action_size):
@@ -87,8 +91,8 @@ class DQNAgent:
 
 
 if __name__ == "__main__":
-    env = gym.make('CartPole-v1')
-    env = Pendulum(0,0)
+    #env = gym.make('CartPole-v1')
+    env = Pendulum(RENDER, SEED)
     state_size = env.observation_space.shape[0]
     action_size = env.action_space.n
     agent = DQNAgent(state_size, action_size)
@@ -97,17 +101,20 @@ if __name__ == "__main__":
     batch_size = 32
 
     for e in range(EPISODES):
-        state = env.reset()
+        state = env.reset(SAVED_MODEL, SEED)
         state = np.reshape(state, [1, state_size])
         for time in range(500):
-            # env.render()
+            if RENDER:
+                env.render()
             action = agent.act(state)
             next_state, reward, done, _ = env.step(action)
             #reward = reward if not done else -10
+            '''
             x,x_dot,theta,theta_dot = next_state
             r1 = (env.x_threshold - abs(x)) / env.x_threshold - 0.8
             r2 = (env.theta_threshold_radians - abs(theta)) / env.theta_threshold_radians - 0.5
             reward = r1 + r2
+            '''
             
             next_state = np.reshape(next_state, [1, state_size])
             agent.memorize(state, action, reward, next_state, done)
