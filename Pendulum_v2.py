@@ -44,7 +44,8 @@ class Pendulum:
         self.momentum_wheel = self.mass_wheel*(self.rad_out**2+self.rad_in**2)/2
         self.dt = 0.001
         self.gravity = 9.81
-        self.max_q1dot = 1 #initial q1_dot default 1? to be verified
+        self.max_q1 = 15*pi/180
+        self.max_q1dot = 0.3 #initial q1_dot default 0.3? to be verified
         self.wheel_max_speed = 20
         self.max_torque = 15
         self.torque = 0
@@ -59,7 +60,7 @@ class Pendulum:
         self.Ip = m2*l2**2+I1+I2 + 2*l1*m1*l1**2+(1-2*l1)*m1*(0.5*(1-2*l1)+2*l1)**2
         self.mbarg = (m1*l1+m2*l2)*self.gravity
 
-        high = np.array([pi/4, self.max_q1dot, self.wheel_max_speed], dtype=np.float32)
+        high = np.array([2*self.max_q1, self.max_q1dot, self.wheel_max_speed], dtype=np.float32)
         #self.action_space = spaces.Box(low=-self.max_torque, high=self.max_torque, shape=(1,), dtype=np.float32)
         self.action_space = spaces.Discrete(3)
         self.observation_space = spaces.Box(low=-high, high=high, dtype=np.float32)
@@ -87,14 +88,13 @@ class Pendulum:
     def reset(self, saved, seed):
         self.np_random = np.random.seed(seed)
 
-        reset_angle_deg = 10
-        reset_angle_rad = reset_angle_deg*pi/180
+        reset_angle = 10*pi/180
 
         if saved == None:
-            reset_high = np.array([reset_angle_rad, self.max_q1dot, self.wheel_max_speed])
+            reset_high = np.array([reset_angle, self.max_q1dot, self.wheel_max_speed])
             self.state = self.np_random.uniform(low=-reset_high, high=reset_high)
         else:
-            self.state = np.array([reset_angle_rad, 0, 0], dtype=np.float32)
+            self.state = np.array([reset_angle, 0, 0], dtype=np.float32)
             # self.state = np.array([0, self.max_q1dot, 0],dtype=np.float32)
 
         self.last_u = None
@@ -171,19 +171,27 @@ class Pendulum:
         Ip = self.Ip
         a = self.mbarg*sin(angle_normalize(q1))
 
-        newq1_dot = q1_dot + ((a-torque)/(Ip-I2))*dt
-        newq1 = angle_normalize(angle_normalize(q1) + newq1_dot * dt)
+        q1_dot = q1_dot + ((a-torque)/(Ip-I2))*dt
+        q1 = angle_normalize(angle_normalize(q1) + q1_dot * dt)
 
-        newq2_dot = q2_dot + ((torque*Ip-a*I2)/I2/(Ip-I2))*dt
-        newq2_dot = np.clip(newq2_dot, -self.wheel_max_speed, self.wheel_max_speed)
-        newq2 = angle_normalize(angle_normalize(q2) + newq2_dot * dt)
+        q2_dot = q2_dot + ((torque*Ip-a*I2)/I2/(Ip-I2))*dt
+        q2_dot = np.clip(q2_dot, -self.wheel_max_speed, self.wheel_max_speed)
+        q2 = angle_normalize(angle_normalize(q2) + q2_dot * dt)
 
-        state = np.array([newq1[0], newq1_dot[0], newq2_dot[0]], dtype=np.float32)
+        #state = np.array([q1[0], q1_dot[0], q2_dot[0]], dtype=np.float32)
+        self.state = (q1, q1_dot, q2_dot)
 
-        self.theta_rod = newq1
-        self.theta_wheel = newq2
-        self.theta_rod_dot = newq1_dot
-        self.theta_wheel_dot = newq2_dot
+        done = bool(
+            q1 < -self.max_q1
+            or q1 > self.max_q1
+            or q1_dot < -self.max_q1dot
+            or q1_dot > self.max_q1dot
+        )
+
+        self.theta_rod = q1
+        self.theta_wheel = q2
+        self.theta_rod_dot = q1_dot
+        self.theta_wheel_dot = q2_dot
         self.torque = torque
 
         #costs = 1000 * angle_normalize(q1) ** 2 + 0.1 * q1_dot ** 2 + 0.001 * torque ** 2
@@ -197,7 +205,8 @@ class Pendulum:
         #elif abs(angle_normalize(q1)) < 0.001 and abs(q1_dot) < 0.001 and abs(q2_dot) < 0.01 :
         #    costs -= 1000
 
-        return state, -costs, False, {}
+        #return state, -costs, False, {}
+        return np.array(self.state, dtype=np.float32), -costs, done, {}
 
     def close(self):
         pygame.display.quit()
