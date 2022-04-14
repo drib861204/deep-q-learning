@@ -19,9 +19,10 @@ import numpy as np
 import gym
 from gym import spaces, logger
 from gym.utils import seeding
+from gym.utils.seeding import RandomNumberGenerator
 
 
-class Pendulum:
+class Pendulum(gym.Env):
     def __init__(self, rend, seed):
         #self.np_random = np.random.seed(seed)
         #for i in range(10):
@@ -85,8 +86,11 @@ class Pendulum:
             #print("font")
 
 
-    def reset(self, saved, seed):
-        self.np_random = np.random.seed(seed)
+    def reset(self, saved, seed, return_info=False):
+
+        #self.np_random = np.random.seed(seed)
+        super().reset(seed=seed)
+        #self._np_random, seed = seeding.np_random(seed)
 
         reset_angle = 10*pi/180
 

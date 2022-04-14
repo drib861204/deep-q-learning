@@ -10,11 +10,14 @@ from keras import backend as K
 
 import tensorflow as tf
 from Pendulum_v2 import *  # added by Ben
+import os
+import time
 
-EPISODES = 5000
+EPISODES = 1 #5000
 RENDER = 0
 SEED = 0
 SAVED_MODEL = None
+TRIAL = 0
 
 class DQNAgent:
     def __init__(self, state_size, action_size):
@@ -100,10 +103,15 @@ if __name__ == "__main__":
     done = False
     batch_size = 32
 
+    if not os.path.exists(f"./save/{TRIAL}"):
+        os.mkdir(f"./save/{TRIAL}")
+
     for e in range(EPISODES):
+        print("episode: ",e)
         state = env.reset(SAVED_MODEL, SEED)
         state = np.reshape(state, [1, state_size])
-        for time in range(500):
+        for timer in range(40): # origin range(500)
+            print("timer", timer)
             if RENDER:
                 env.render()
             action = agent.act(state)
@@ -122,9 +130,9 @@ if __name__ == "__main__":
             if done:
                 agent.update_target_model()
                 print("episode: {}/{}, score: {}, e: {:.2}"
-                      .format(e, EPISODES, time, agent.epsilon))
+                      .format(e, EPISODES, timer, agent.epsilon))
                 break
             if len(agent.memory) > batch_size:
                 agent.replay(batch_size)
-        # if e % 10 == 0:
-        #     agent.save("./save/cartpole-ddqn.h5")
+        if e % 10 == 0:
+            agent.save(f"./save/{TRIAL}/rwip.h5")
