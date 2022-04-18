@@ -18,8 +18,8 @@ import numpy as np
 
 import gym
 from gym import spaces, logger
-from gym.utils import seeding
-from gym.utils.seeding import RandomNumberGenerator
+#from gym.utils import seeding
+#from gym.utils.seeding import RandomNumberGenerator
 
 
 class Pendulum(gym.Env):
@@ -89,14 +89,15 @@ class Pendulum(gym.Env):
     def reset(self, saved, seed, return_info=False):
 
         #self.np_random = np.random.seed(seed)
-        super().reset(seed=seed)
+        #super().reset(seed=seed)
         #self._np_random, seed = seeding.np_random(seed)
 
         reset_angle = 10*pi/180
 
         if saved == None:
             reset_high = np.array([reset_angle, self.max_q1dot, self.wheel_max_speed])
-            self.state = self.np_random.uniform(low=-reset_high, high=reset_high)
+            #self.state = self.np_random.uniform(low=-reset_high, high=reset_high)
+            self.state = np.random.uniform(low=-reset_high, high=reset_high)
         else:
             self.state = np.array([reset_angle, 0, 0], dtype=np.float32)
             # self.state = np.array([0, self.max_q1dot, 0],dtype=np.float32)
